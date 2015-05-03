@@ -49,6 +49,3 @@ A node is able to determine it's build environment by reading its own metadata t
   - `hash`
   - `tag`
   - `branch`
-
-
-If file injection is not available then these attributes can be set in instance metadata
