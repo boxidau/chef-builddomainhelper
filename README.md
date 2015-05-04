@@ -20,8 +20,30 @@ Since build domains are separated and have limited influence on each other as we
 - chef recipes should look for defined attributes first (ie. node['customer']['mysql']['master_ip'])
   - This allows environment attribute_overrides to take precedence over chef searches
   - For production environment this allows fixed persistence layer for dynamic build environments
+  - Attributes should *all* be explicitly set to `nil` to enable reliable overrides. Should you want to define an attribute value, this should be done via environment attributes
 - chef searches should look something like this
-  - ` api_nodes = search('node', "tags:mysql_master AND build_domain:#{node['build_domain']} AND chef_environment:#{node.chef_environment}")`
+
+```
+#check attributes first to see if result is statically defined
+if node['mysql']['master_ip'].nil?
+    # Attribute is nil
+    # Search the build domain
+
+    db_master_search = search('node', "tags:mysql_master AND build_domain:#{node.build_domain} AND chef_environment:#{node.chef_environment}")
+
+    # see if any results were found in the build domain
+    if db_master_search.length < 1
+      # if nothing was found in the build domain then check the entire environment
+      db_master_search = search('node', "tags:mysql_master AND chef_environment:#{node.chef_environment}")
+    end
+
+    raise 'No search results were found for mysql_master' if db_master_search.length < 1
+
+    db_master_ip = best_ip_for(db_master.first)
+else
+  db_master_ip = node['mysql']['master_ip']
+end
+```
 
 ### Anti-patterns
 
