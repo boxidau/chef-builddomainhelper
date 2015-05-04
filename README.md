@@ -58,16 +58,16 @@ A node is able to determine it's build environment by reading its own metadata t
 ```
 {
   "build_domain_id": "xxxxxxxxxxx",
-  "code_revision": "35973597359735973507253072935",
-  "code_revision_type": "hash"
+  "code_ref": "35973597359735973507253072935",
+  "code_ref_type": "hash"
 }
 ```
 
 `build_domain_id` should be dynamically generated for all machines in the same build domain (ie. each machine in the build domain can find each other with this ID)
 
-`code_revision` is the customer code build ref, this can be a commit hash, branch name (not recommended) or tag.
+`code_ref` is the customer code build ref, this can be a commit hash, branch name (not recommended) or tag.
 
-`code_revision_type` can be one of the following:
+`code_ref_type` can be one of the following:
   - `hash`
   - `tag`
   - `branch`
