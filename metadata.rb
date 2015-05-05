@@ -1,5 +1,5 @@
 # Encoding: utf-8
-name 'BuildDomainHelper'
+name 'build-domain-helper'
 maintainer 'Simon Mirco'
 maintainer_email 'simon.mirco@rackspace.com'
 license 'Apache 2.0'

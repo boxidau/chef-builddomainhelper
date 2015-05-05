@@ -1,6 +1,6 @@
 require 'rspec'
 require 'chefspec'
-require ::File.join ::File.dirname(__FILE__), '..', '..', 'libraries', 'default'
+require ::File.join ::File.dirname(__FILE__), '..', '..', 'libraries', 'build_domain_helper'
 
 RSpec.configure do |config|
   # Prohibit using the should syntax

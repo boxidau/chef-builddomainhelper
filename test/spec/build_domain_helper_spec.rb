@@ -1,6 +1,6 @@
 require_relative 'spec_helper'
 
-describe Chef::BuildDomainHelper do
+describe BuildDomainHelper do
   describe '#build_domain_search' do
     let(:query) { double(Chef::Search::Query) }
 
