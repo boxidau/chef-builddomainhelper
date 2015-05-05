@@ -53,7 +53,7 @@ module BuildDomainHelper
     subnets
   end
 
-  def self.build_domain_search(node, tag, attribute, single = true)
+  def self.search(node, tag, attribute, single = true)
     Chef::Log.info("Build domain search for #{tag}")
 
     # check attribute first to see if result is statically defined
@@ -88,7 +88,10 @@ module BuildDomainHelper
       results = node_search[0]
     end
 
-    fail "No search results were found for #{tag}" if results.count < 1
+    if results.count < 1
+      Chef::Log.error("No search results were found for #{tag}")
+      return nil
+    end
 
     if single
       calc_ip(node, results.first)

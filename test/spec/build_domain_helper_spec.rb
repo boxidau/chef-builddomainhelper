@@ -1,7 +1,7 @@
 require_relative 'spec_helper'
 
 describe BuildDomainHelper do
-  describe '#build_domain_search' do
+  describe '#search' do
     let(:query) { double(Chef::Search::Query) }
 
     before do
@@ -22,14 +22,14 @@ describe BuildDomainHelper do
     it 'returns attribute if not nil' do
       attrib = 'something'
       node = stub_node(platform: 'ubuntu', version: '12.04')
-      expect(described_class.build_domain_search(node, 'some_tag', attrib)).to eq('something')
+      expect(described_class.search(node, 'some_tag', attrib)).to eq('something')
     end
 
     it 'returns ip address of node2 from environment search' do
       attrib = nil
       node1_file = File.join(File.dirname(__FILE__), '..', 'fixtures', 'nodes', 'node1.json')
       node1 = stub_node('self', path: node1_file)
-      expect(described_class.build_domain_search(node1, 'node2', attrib)).to eq('192.168.0.2')
+      expect(described_class.search(node1, 'node2', attrib)).to eq('192.168.0.2')
     end
 
     it 'returns eth2 ip address of node2 from environment failover search' do
@@ -37,7 +37,7 @@ describe BuildDomainHelper do
       node1_file = File.join(File.dirname(__FILE__), '..', 'fixtures', 'nodes', 'node1.json')
       node1 = stub_node('self', path: node1_file)
       node1.set['build_domain'] = '3957397513131'
-      expect(described_class.build_domain_search(node1, 'node2', attrib)).to eq('192.168.0.2')
+      expect(described_class.search(node1, 'node2', attrib)).to eq('192.168.0.2')
     end
 
     it 'returns eth2 ip address of node3 from build domain search' do
@@ -45,7 +45,7 @@ describe BuildDomainHelper do
       node1_file = File.join(File.dirname(__FILE__), '..', 'fixtures', 'nodes', 'node1.json')
       node1 = stub_node('self', path: node1_file)
       node1.set['build_domain'] = '3957397513131'
-      expect(described_class.build_domain_search(node1, 'node3', attrib)).to eq('192.168.0.3')
+      expect(described_class.search(node1, 'node3', attrib)).to eq('192.168.0.3')
     end
 
     it 'returns eth1 ip address of node4 from build domain search' do
@@ -53,7 +53,7 @@ describe BuildDomainHelper do
       node1_file = File.join(File.dirname(__FILE__), '..', 'fixtures', 'nodes', 'node1.json')
       node1 = stub_node('self', path: node1_file)
       node1.set['build_domain'] = '3957397513131'
-      expect(described_class.build_domain_search(node1, 'node4', attrib)).to eq('10.208.0.37')
+      expect(described_class.search(node1, 'node4', attrib)).to eq('10.208.0.37')
     end
   end
 end
