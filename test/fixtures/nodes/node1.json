@@ -1,0 +1,41 @@
+{
+  "chef_environment": "_default",
+  "network": {
+    "interfaces": {
+      "lo": {
+        "addresses": {
+          "127.0.0.1": {
+            "netmask": "255.0.0.0",
+            "family": "inet"
+          },  
+          "::1": {
+            "family": "inet6"
+          }   
+        }   
+      },  
+      "eth1": {
+        "addresses": {
+          "10.208.0.34": {
+            "netmask": "255.255.252.0",
+            "family": "inet"
+          },  
+          "::1": {
+            "family": "inet6"
+          }   
+        }   
+      },  
+      "eth2": {
+        "addresses": {
+          "192.168.0.1": {
+            "netmask": "255.255.255.0",
+            "family": "inet"
+          },
+          "2001::1": {
+            "family": "inet6"
+          }
+        }
+      }
+    }
+  }
+}
+

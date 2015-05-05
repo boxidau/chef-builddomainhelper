@@ -1,0 +1,59 @@
+{
+  "chef_environment": "_default",
+  "json_class": "Chef::Node",
+  "automatic": {
+    "hostname": "node3",
+    "os": "centos",
+    "recipes": [
+    ],
+    "roles": [
+    ],
+    "tags": [
+      "node3"
+    ]
+  },
+  "build_domain": "3957397513131",
+  "network": {
+      "interfaces": {
+        "lo": {
+          "addresses": {
+            "127.0.0.1": {
+              "netmask": "255.0.0.0",
+              "family": "inet"
+            },  
+            "::1": {
+              "family": "inet6"
+            }   
+          }   
+        },  
+        "eth1": {
+          "addresses": {
+            "10.208.0.36": {
+              "netmask": "255.255.252.0",
+              "family": "inet"
+            },  
+            "::1": {
+              "family": "inet6"
+            }   
+          }   
+        },  
+        "eth2": {
+          "addresses": {
+            "192.168.0.3": {
+              "netmask": "255.255.255.0",
+              "family": "inet"
+            },
+            "2001::1": {
+              "family": "inet6"
+            }
+          }
+        }
+      }
+  },
+  "chef_type": "node",
+  "default": {
+  },
+  "override": {
+  }
+}
+
