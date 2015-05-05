@@ -1,7 +1,7 @@
 Chef Build Domain Overview
 ---
 
-The purpose of this document is to document and detail a new concept I'm calling Build Domains.
+[![Circle CI](https://circleci.com/gh/boxidau/chef-builddomainhelper.svg?style=svg)](https://circleci.com/gh/boxidau/chef-builddomainhelper)
 
 Build Domains are designed to further sub-divide a Chef Environment into a smaller unit. The purpose of a build domain (BD) is to allow multiple customer code builds to exist in the same Chef environment.
 
@@ -23,27 +23,6 @@ Since build domains are separated and have limited influence on each other as we
   - Attributes should *all* be explicitly set to `nil` to enable reliable overrides. Should you want to define an attribute value, this should be done via environment attributes
 - chef searches should look something like this
 
-```
-#check attributes first to see if result is statically defined
-if node['mysql']['master_ip'].nil?
-    # Attribute is nil
-    # Search the build domain
-
-    db_master_search = search('node', "tags:mysql_master AND build_domain:#{node.build_domain} AND chef_environment:#{node.chef_environment}")
-
-    # see if any results were found in the build domain
-    if db_master_search.length < 1
-      # if nothing was found in the build domain then check the entire environment
-      db_master_search = search('node', "tags:mysql_master AND chef_environment:#{node.chef_environment}")
-    end
-
-    raise 'No search results were found for mysql_master' if db_master_search.length < 1
-
-    db_master_ip = best_ip_for(db_master.first)
-else
-  db_master_ip = node['mysql']['master_ip']
-end
-```
 
 ### Anti-patterns
 
