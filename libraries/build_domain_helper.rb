@@ -18,7 +18,27 @@ require 'ipaddr'
 # BuildDomainHelper is able to perform scope limited searched in a build domain
 # it will also return the best ip for a node automatically
 module BuildDomainHelper
-  def self.calc_ip(node, other_node)
+  include Chef::Mixin::ShellOut
+  def get_build_domain(node)
+    return node[:build_domain] unless node[:build_domain].nil?
+    build_domain = nil
+    so = shell_out('xenstore-ls vm-data/user-metadata')
+    if so.exitstatus == 0
+      build_domain = {}
+      so.stdout.split("\n").each do |line|
+        build_domain[:id] = line.split[2].delete('\"') if line =~ /^build_domain_id/
+        build_domain[:code_ref] = line.split[2].delete('\"') if line =~ /^code_ref/
+        build_domain[:code_ref_type] = line.split[2].delete('\"') if line =~ /^code_ref_type/
+      end
+    end
+    node.set[:build_domain] = build_domain
+    node[:build_domain]
+  rescue Errno::ENOENT
+    Chef::Log.debug('Unable to find xenstore-ls, cannot capture build domain info')
+    nil
+  end
+
+  def calc_ip(node, other_node)
     local_subnets = subnets(node)
     remote_subnets = subnets(other_node)
 
@@ -41,7 +61,7 @@ module BuildDomainHelper
     remote_ip
   end
 
-  def self.subnets(node)
+  def subnets(node)
     subnets = {}
     node[:network][:interfaces].reverse_each do |interface, configuration|
       next if interface == 'lo'
@@ -53,7 +73,7 @@ module BuildDomainHelper
     subnets
   end
 
-  def self.search(node, tag, attribute, single = true)
+  def search(node, tag, attribute, single = true)
     Chef::Log.info("Build domain search for #{tag}")
 
     # check attribute first to see if result is statically defined
@@ -64,13 +84,14 @@ module BuildDomainHelper
 
     results = {}
 
+    get_build_domain(node)
     # Attribute is nil
     # Search the build domain
-    unless node['build_domain'].nil?
+    unless node[:build_domain].nil?
       node_search = Chef::Search::Query.new.search(
         'node',
         ["tags:#{tag}",
-         "build_domain:#{node.build_domain}",
+         "build_domain:#{node[:build_domain][:id]}",
          "chef_environment:#{node.chef_environment}"
         ].join(' AND ')
       )
