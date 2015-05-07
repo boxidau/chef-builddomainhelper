@@ -21,26 +21,30 @@ module BuildDomainHelper
   include Chef::Mixin::ShellOut
   def bd_get(node)
     return node[:build_domain] unless node[:build_domain].nil?
-    build_domain = nil
     so = shell_out('xenstore-ls vm-data/user-metadata')
     if so.exitstatus == 0
-      build_domain = {}
       so.stdout.split("\n").each do |line|
-        build_domain[:id] = line.split[2].delete('\"') if line =~ /^build_domain_id/
-        build_domain[:code_ref] = line.split[2].delete('\"') if line =~ /^code_ref/
-        build_domain[:code_ref_type] = line.split[2].delete('\"') if line =~ /^code_ref_type/
+        node.set[:build_domain][:id] = line.split[2].delete('\"') if line =~ /^build_domain_id/
+        node.set[:build_domain][:code_ref] = line.split[2].delete('\"') if line =~ /^code_ref/
+        node.set[:build_domain][:code_ref_type] = line.split[2].delete('\"') if line =~ /^code_ref_type/
       end
+      return node[:build_domain]
     end
-    node.set[:build_domain] = build_domain
-    node[:build_domain]
   rescue Errno::ENOENT
     Chef::Log.debug('Unable to find xenstore-ls, cannot capture build domain info')
-    nil
+    return false
   end
 
-  def bd_calc_ip(node, other_node)
+  def bd_calc_ip(node, other_node, favour = nil)
     local_subnets = bd_subnets(node)
     remote_subnets = bd_subnets(other_node)
+
+    unless favour.nil?
+      favour_subnet = IPAddr.new favour
+      remote_subnets.each do |r_addr, r_subnet|
+        return r_addr if favour_subnet.include?(favour_subnet)
+      end
+    end
 
     remote_ip = nil
     local_subnets.each do |l_addr, l_subnet|
@@ -73,55 +77,32 @@ module BuildDomainHelper
     subnets
   end
 
-  def bd_search(node, tag, attribute, single = true)
+  def bd_search(node, tag)
     Chef::Log.info("Build domain search for #{tag}")
 
-    # check attribute first to see if result is statically defined
-    unless attribute.nil?
-      return attribute
-    end
-    Chef::Log.info('Attribute is nil, searching instead')
-
-    results = {}
-
     bd_get(node)
+
     # Attribute is nil
-    # Search the build domain
-    unless node[:build_domain].nil?
-      node_search = Chef::Search::Query.new.search(
-        'node',
-        ["tags:#{tag}",
-         "build_domain:#{node[:build_domain][:id]}",
-         "chef_environment:#{node.chef_environment}"
-        ].join(' AND ')
-      )
-      results = node_search[0]
-    end
+    # Search the environment
+    node_search = Chef::Search::Query.new.search(
+      'node', "tags:#{tag} AND chef_environment:#{node.chef_environment}"
+    )
+    results = node_search[0]
 
     # see if any results were found in the build domain
-    if results.count < 1
-      Chef::Log.info("Build domain search for tag: #{tag} returned no results, searching entire environment")
-      # if nothing was found in the build domain then check the entire environment
-      node_search = Chef::Search::Query.new.search(
-        'node',
-        "tags:#{tag} AND chef_environment:#{node.chef_environment}"
-      )
-      results = node_search[0]
+    return results unless node.key?('build_domain') && node[:build_domain].key?('id')
+
+    # filter resulting nodes searching for the build domain
+    build_domain_nodes = results.select do |result_node|
+      next unless result_node.key?('build_domain')
+      next unless result_node[:build_domain].fetch('id', nil) == node[:build_domain][:id]
+      result_node
     end
 
-    if results.count < 1
-      Chef::Log.error("No search results were found for #{tag}")
-      return nil
-    end
-
-    if single
-      bd_calc_ip(node, results.first)
+    if build_domain_nodes.count > 0
+      build_domain_nodes
     else
-      addresses = []
-      results.each do |result_node|
-        addresses.push(bd_calc_ip(node, result_node))
-      end
-      addresses
+      results
     end
   end
 end

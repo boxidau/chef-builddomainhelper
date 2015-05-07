@@ -2,18 +2,18 @@
   "chef_environment": "_default",
   "json_class": "Chef::Node",
   "automatic": {
-    "hostname": "node3",
+    "hostname": "node4",
     "os": "centos",
     "recipes": [
     ],
     "roles": [
     ],
     "tags": [
-      "node3"
+      "node4"
     ]
   },
   "build_domain": {
-    "id": "3957397513131",
+    "id": "abc123",
     "code_ref": "0.2.3",
     "code_ref_type": "tag"
   },
@@ -32,7 +32,7 @@
         },  
         "eth1": {
           "addresses": {
-            "10.208.0.36": {
+            "10.208.0.37": {
               "netmask": "255.255.252.0",
               "family": "inet"
             },  
@@ -43,7 +43,7 @@
         },  
         "eth2": {
           "addresses": {
-            "192.168.0.3": {
+            "192.168.1.3": {
               "netmask": "255.255.255.0",
               "family": "inet"
             },

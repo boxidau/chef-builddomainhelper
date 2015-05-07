@@ -12,7 +12,11 @@
       "node4"
     ]
   },
-  "build_domain": "3957397513131",
+  "build_domain": {
+    "id": "3957397513131",
+    "code_ref": "0.2.3",
+    "code_ref_type": "tag"
+  },
   "network": {
       "interfaces": {
         "lo": {

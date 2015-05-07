@@ -5,13 +5,23 @@ describe BuildDomainHelper do
     xenstore_ls = File.read(File.join(File.dirname(__FILE__), '..', 'fixtures', 'xenstore.out'))
     xenstore_ls_nobuild = File.read(File.join(File.dirname(__FILE__), '..', 'fixtures', 'xenstore-nobuild.out'))
 
-    let(:shellout) do
-      double(run_command: nil, error!: nil, stdout: xenstore_ls_nobuild, stderr: double(empty?: true))
-    end
-
     let(:query) { double(Chef::Search::Query) }
     let(:dummy_class) { Class.new { include BuildDomainHelper } }
     let(:node_fixtures) { File.join(File.dirname(__FILE__), '..', 'fixtures', 'nodes') }
+
+    def fixture_node(node)
+      node_file = File.join(File.dirname(__FILE__), '..', 'fixtures', 'nodes', "#{node}.json")
+      stub_node(node, path: node_file)
+    end
+
+    # No BD
+    let(:node1) { fixture_node('node1') }
+    let(:node2) { fixture_node('node2') }
+    # Same BD
+    let(:node3) { fixture_node('node3') }
+    let(:node4) { fixture_node('node4') }
+    # Different BD
+    let(:node5) { fixture_node('node5') }
 
     before do
       allow(Chef::Search::Query).to receive(:new).and_return(query)
@@ -22,90 +32,68 @@ describe BuildDomainHelper do
       allow(shellout).to receive(:exitstatus).and_return(0)
     end
 
-    it 'returns attribute if not nil' do
-      attrib = 'something'
-      node = stub_node(platform: 'ubuntu', version: '12.04')
-      expect(dummy_class.new.bd_search(node, 'some_tag', attrib)).to eq('something')
-    end
-    context 'with build domain' do
-      let(:shellout) { double(run_command: nil, error!: nil, stdout: xenstore_ls, stderr: double(empty?: true)) }
-
-      it 'returns ip address of node2 from environment search' do
-        attrib = nil
-        node1_file = File.join(File.dirname(__FILE__), '..', 'fixtures', 'nodes', 'node1.json')
-        node1 = stub_node('self', path: node1_file)
-        node2 = stub_node('node2', path: File.join(node_fixtures, 'node2.json'))
-
-        allow(query).to receive(:search).with(
-          'node',
-          'tags:node2 AND chef_environment:_default'
-        ).and_return([[node2], 1, 1])
-
-        allow(query).to receive(:search).with(
-          'node',
-          'tags:node2 AND build_domain:3957397513131 AND chef_environment:_default'
-        ).and_return([[], 0, 0])
-
-        expect(dummy_class.new.bd_search(node1, 'node2', attrib)).to eq('192.168.0.2')
+    context 'without metadata' do
+      let(:shellout) do
+        double(run_command: nil, error!: nil, stdout: xenstore_ls_nobuild, stderr: double(empty?: true))
       end
 
-      it 'fetches xen-store metadata' do
-        node = stub_node('node1', path: File.join(node_fixtures, 'node1.json'))
-        expect(dummy_class.new.bd_get(node)).to eq(
+      it 'from a node without a build domain all other nodes should return' do
+        allow(query).to receive(:search).with(
+          'node',
+          'tags:all AND chef_environment:_default'
+        ).and_return([[node1, node2, node3, node4, node5], 1, 5])
+        expect(dummy_class.new.bd_search(node1, 'all')).to eq([node1, node2, node3, node4, node5])
+      end
+
+      it 'fails to fetch xen-store metadata' do
+        expect(dummy_class.new.bd_get(node1)).to eq(nil)
+      end
+
+      it 'fetches build domain from existing node attributes, even though xenstore-ls is not available' do
+        expect(dummy_class.new.bd_get(node3)).to eq(
+          'code_ref' => '0.2.3',
+          'code_ref_type' => 'tag',
+          'id' => '3957397513131'
+        )
+      end
+    end
+
+    context 'with build domain via metadata' do
+      let(:shellout) { double(run_command: nil, error!: nil, stdout: xenstore_ls, stderr: double(empty?: true)) }
+
+      it 'fetches xen-store metadata since the node itself has no info' do
+        expect(dummy_class.new.bd_get(node1)).to eq(
           'code_ref' => '0.2.3',
           'code_ref_type' => 'tag',
           'id' => '3957397513131'
         )
       end
 
-      it 'returns eth2 ip address of node2 from environment failover search' do
-        attrib = nil
-        node1_file = File.join(File.dirname(__FILE__), '..', 'fixtures', 'nodes', 'node1.json')
-        node1 = stub_node('self', path: node1_file)
-        # set build domain shell out
-
-        node2 = stub_node('node2', path: File.join(node_fixtures, 'node2.json'))
+      it 'returns nodes from environment failover search since nothing is returned with the same build domain' do
         allow(query).to receive(:search).with(
           'node',
-          'tags:node2 AND chef_environment:_default'
-        ).and_return([[node2], 1, 1])
-        allow(query).to receive(:search).with(
-          'node',
-          'tags:node2 AND build_domain:3957397513131 AND chef_environment:_default'
-        ).and_return([[], 0, 0])
+          'tags:database AND chef_environment:_default'
+        ).and_return([[node1, node2], 1, 1])
 
-        expect(dummy_class.new.bd_search(node1, 'node2', attrib)).to eq('192.168.0.2')
+        expect(dummy_class.new.bd_search(node3, 'database')).to eq([node1, node2])
       end
 
-      it 'returns eth2 ip address of node3 from build domain search' do
-        attrib = nil
-        node1_file = File.join(File.dirname(__FILE__), '..', 'fixtures', 'nodes', 'node1.json')
-        node1 = stub_node('self', path: node1_file)
-        # node1.set['build_domain'] = '3957397513131'
-        # set build domain shell out
-
-        node3 = stub_node('node3', path: File.join(node_fixtures, 'node3.json'))
+      it 'returns only the nodes in the same BD with mixed search results' do
         allow(query).to receive(:search).with(
           'node',
-          'tags:node3 AND build_domain:3957397513131 AND chef_environment:_default'
-        ).and_return([[node3], 1, 1])
+          'tags:app AND chef_environment:_default'
+        ).and_return([[node3, node4, node5], 1, 1])
 
-        expect(dummy_class.new.bd_search(node1, 'node3', attrib)).to eq('192.168.0.3')
+        expect(dummy_class.new.bd_search(node3, 'app')).to eq([node3, node4])
       end
 
-      it 'returns eth1 ip address of node4 from build domain search' do
-        attrib = nil
-        node1_file = File.join(File.dirname(__FILE__), '..', 'fixtures', 'nodes', 'node1.json')
-        node1 = stub_node('self', path: node1_file)
-        # set build domain shell out
-        # node1.set['build_domain'] = '3957397513131'
-        node4 = stub_node('node4', path: File.join(node_fixtures, 'node4.json'))
+      it 'return only self since the search results are all from different build domains' do
         allow(query).to receive(:search).with(
           'node',
-          'tags:node4 AND build_domain:3957397513131 AND chef_environment:_default'
-        ).and_return([[node4], 1, 1])
+          'tags:app AND chef_environment:_default'
+        ).and_return([[node3, node4, node5], 1, 1])
 
-        expect(dummy_class.new.bd_search(node1, 'node4', attrib)).to eq('10.208.0.37')
+        expect(dummy_class.new.bd_search(node5, 'app')).to eq([node5])
       end
     end
   end
