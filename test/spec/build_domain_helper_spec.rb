@@ -25,7 +25,7 @@ describe BuildDomainHelper do
     it 'returns attribute if not nil' do
       attrib = 'something'
       node = stub_node(platform: 'ubuntu', version: '12.04')
-      expect(dummy_class.new.search(node, 'some_tag', attrib)).to eq('something')
+      expect(dummy_class.new.bd_search(node, 'some_tag', attrib)).to eq('something')
     end
     context 'with build domain' do
       let(:shellout) { double(run_command: nil, error!: nil, stdout: xenstore_ls, stderr: double(empty?: true)) }
@@ -46,12 +46,12 @@ describe BuildDomainHelper do
           'tags:node2 AND build_domain:3957397513131 AND chef_environment:_default'
         ).and_return([[], 0, 0])
 
-        expect(dummy_class.new.search(node1, 'node2', attrib)).to eq('192.168.0.2')
+        expect(dummy_class.new.bd_search(node1, 'node2', attrib)).to eq('192.168.0.2')
       end
 
       it 'fetches xen-store metadata' do
         node = stub_node('node1', path: File.join(node_fixtures, 'node1.json'))
-        expect(dummy_class.new.get_build_domain(node)).to eq(
+        expect(dummy_class.new.bd_get(node)).to eq(
           'code_ref' => '0.2.3',
           'code_ref_type' => 'tag',
           'id' => '3957397513131'
@@ -74,7 +74,7 @@ describe BuildDomainHelper do
           'tags:node2 AND build_domain:3957397513131 AND chef_environment:_default'
         ).and_return([[], 0, 0])
 
-        expect(dummy_class.new.search(node1, 'node2', attrib)).to eq('192.168.0.2')
+        expect(dummy_class.new.bd_search(node1, 'node2', attrib)).to eq('192.168.0.2')
       end
 
       it 'returns eth2 ip address of node3 from build domain search' do
@@ -90,7 +90,7 @@ describe BuildDomainHelper do
           'tags:node3 AND build_domain:3957397513131 AND chef_environment:_default'
         ).and_return([[node3], 1, 1])
 
-        expect(dummy_class.new.search(node1, 'node3', attrib)).to eq('192.168.0.3')
+        expect(dummy_class.new.bd_search(node1, 'node3', attrib)).to eq('192.168.0.3')
       end
 
       it 'returns eth1 ip address of node4 from build domain search' do
@@ -105,7 +105,7 @@ describe BuildDomainHelper do
           'tags:node4 AND build_domain:3957397513131 AND chef_environment:_default'
         ).and_return([[node4], 1, 1])
 
-        expect(dummy_class.new.search(node1, 'node4', attrib)).to eq('10.208.0.37')
+        expect(dummy_class.new.bd_search(node1, 'node4', attrib)).to eq('10.208.0.37')
       end
     end
   end

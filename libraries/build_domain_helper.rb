@@ -19,7 +19,7 @@ require 'ipaddr'
 # it will also return the best ip for a node automatically
 module BuildDomainHelper
   include Chef::Mixin::ShellOut
-  def get_build_domain(node)
+  def bd_get(node)
     return node[:build_domain] unless node[:build_domain].nil?
     build_domain = nil
     so = shell_out('xenstore-ls vm-data/user-metadata')
@@ -38,9 +38,9 @@ module BuildDomainHelper
     nil
   end
 
-  def calc_ip(node, other_node)
-    local_subnets = subnets(node)
-    remote_subnets = subnets(other_node)
+  def bd_calc_ip(node, other_node)
+    local_subnets = bd_subnets(node)
+    remote_subnets = bd_subnets(other_node)
 
     remote_ip = nil
     local_subnets.each do |l_addr, l_subnet|
@@ -61,7 +61,7 @@ module BuildDomainHelper
     remote_ip
   end
 
-  def subnets(node)
+  def bd_subnets(node)
     subnets = {}
     node[:network][:interfaces].reverse_each do |interface, configuration|
       next if interface == 'lo'
@@ -73,7 +73,7 @@ module BuildDomainHelper
     subnets
   end
 
-  def search(node, tag, attribute, single = true)
+  def bd_search(node, tag, attribute, single = true)
     Chef::Log.info("Build domain search for #{tag}")
 
     # check attribute first to see if result is statically defined
@@ -84,7 +84,7 @@ module BuildDomainHelper
 
     results = {}
 
-    get_build_domain(node)
+    bd_get(node)
     # Attribute is nil
     # Search the build domain
     unless node[:build_domain].nil?
@@ -115,11 +115,11 @@ module BuildDomainHelper
     end
 
     if single
-      calc_ip(node, results.first)
+      bd_calc_ip(node, results.first)
     else
       addresses = []
       results.each do |result_node|
-        addresses.push(calc_ip(node, result_node))
+        addresses.push(bd_calc_ip(node, result_node))
       end
       addresses
     end
